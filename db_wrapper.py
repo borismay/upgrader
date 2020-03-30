@@ -44,6 +44,14 @@ class local_db(mysql_engine):
         self.db_name = 'testdb'
         mysql_engine.__init__(self, username, password, host, self.db_name)
 
+class levitan_db(mysql_engine):
+    def __init__(self):
+        username = 'siklu'
+        password = 'kwaY8HPqZ6'
+        host = '31.168.34.126'
+        self.db_name = 'siklu_internal_stats'
+        mysql_engine.__init__(self, username, password, host, self.db_name)
+
 ####################################################
 if __name__ == '__main__':
     engine = local_db().engine

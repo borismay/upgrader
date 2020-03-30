@@ -17,11 +17,27 @@ from plotly.graph_objs import *
 from plotly.tools import make_subplots
 
 from statsmodels.tsa.seasonal import seasonal_decompose
-
+from db_wrapper import *
+from stats_downloader import RF_STATS_TABLE_NAME, ETH_STATS_TABLE_NAME
 
 @st.cache
 def load_data(filename):
     data = pd.read_csv(filename)
+    data.index = pd.to_datetime(data['start_ts'])
+    return data[data['host'].notna()].sort_index(ascending=True)
+
+
+@st.cache
+def load_data_database(table='rf'):
+    db = levitan_db()
+    db_engine = db.engine
+    db_name = db.db_name
+    if table == 'rf':
+        sql_query = r"select * from %s.%s ;" % (db_name, RF_STATS_TABLE_NAME)
+    else:
+        sql_query = r"select * from %s.%s ;" % (db_name, ETH_STATS_TABLE_NAME)
+
+    data = pd.read_sql(sql_query, db_engine).drop_duplicates()
     data.index = pd.to_datetime(data['start_ts'])
     return data[data['host'].notna()].sort_index(ascending=True)
 
@@ -136,10 +152,9 @@ def plot_rssi_decomp(df_, ip, period):
 def main():
     st.title('Siklu Smart Suite')
 
-    data_filename = st.sidebar.text_input('Stats filename:', r'c:\Python\upgrader\rf_stats_w.csv')
-
-    df = load_data(data_filename)
-    st.dataframe(df.head())
+    # data_filename = st.sidebar.text_input('Stats filename:', r'c:\Python\upgrader\rf_stats_w.csv')
+    # df = load_data(data_filename)
+    df = load_data_database()
 
     ips = df['host'].drop_duplicates().to_list()
     selected_ips = st.sidebar.multiselect('Chose IPs', ips, default=[])
@@ -147,7 +162,10 @@ def main():
     rssi_delta_db_ref = st.sidebar.slider('RSSI delta dB', 2, 20, value=4, step=2)
     period = int(st.sidebar.text_input('Decom period:', 96))
 
-    if st.sidebar.button('Run analysis'):
+    if st.sidebar.button('Run RF analysis'):
+        data = df[df['host'].isin(selected_ips)]
+        st.write('From: {} to {}'.format(data.index.min(), data.index.max()))
+        st.dataframe(data.describe())
         # RSSI
         st.header('RSSI')
         st.plotly_chart(plot_rssi(df, selected_ips))

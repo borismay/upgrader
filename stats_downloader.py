@@ -1,7 +1,16 @@
 from scanner_v2 import SikluCommandParserBase, SikluUnit, SikluCommandParam
 import datetime
 from db_wrapper import *
-import os, sys, pexpect, time
+import os, sys, time
+try:
+    import wexpect
+    TIMEOUT = wexpect.TIMEOUT
+    EOF = wexpect.EOF
+except:
+    import pexpect
+    TIMEOUT = pexpect.TIMEOUT
+    EOF = pexpect.EOF
+
 from subprocess import call
 import re
 import pandas as pd
@@ -17,7 +26,8 @@ except ImportError:
 ETH_STATS_TABLE_NAME = 'eth_stats_table'
 RF_STATS_TABLE_NAME = 'rf_stats_table'
 
-db_engine = local_db().engine
+db = levitan_db()
+db_engine = db.engine
 
 
 class ShowEthStatisticsSummary(SikluCommandParserBase):
@@ -163,6 +173,4 @@ if __name__ == '__main__':
     CSV_FILENAME = config.get('DEFAULT', 'CSV_FILENAME')
 
     units_manager_parallel(CSV_FILENAME, N_PROCESSES)
-
-
 

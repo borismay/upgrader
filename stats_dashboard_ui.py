@@ -37,7 +37,7 @@ def load_data_database(table='rf'):
     else:
         sql_query = r"select * from %s.%s ;" % (db_name, ETH_STATS_TABLE_NAME)
 
-    data = pd.read_sql(sql_query, db_engine).drop_duplicates()
+    data = pd.read_sql(sql_query, db_engine)
     data.index = pd.to_datetime(data['start_ts'])
     return data[data['host'].notna()].sort_index(ascending=True)
 
@@ -46,6 +46,7 @@ def plot_rssi(df_, ips):
     fig = Figure()
     for ip in ips:
         df = df_[df_['host'] == ip]
+        df = df.loc[~df.index.duplicated(keep='first')]
         avg_rssi = df['max-rssi'] - (df['max-rssi'] - df['min-rssi']) / 2.0
 
         fig.add_trace(Scatter(
@@ -83,6 +84,7 @@ def plot_rssi_delta(df_, ips, reference = 0, show_plot = False):
         visible = 'legendonly'
     for ip in ips:
         df = df_[df_['host'] == ip]
+        df = df.loc[~df.index.duplicated(keep='first')]
         delta_rssi = df['max-rssi'] - df['min-rssi']
 
         fig.add_trace(Scatter(
@@ -106,6 +108,7 @@ def plot_rssi_delta(df_, ips, reference = 0, show_plot = False):
 
 def plot_rssi_stats(df_, ip):
     df = df_[df_['host'] == ip]
+    df = df.loc[~df.index.duplicated(keep='first')]
     delta_rssi = df['max-rssi'] - df['min-rssi']
     hist_data = [df['max-rssi'], df['min-rssi'], delta_rssi]
     group_labels = ['max-rssi', 'min-rssi', 'delta-rssi']
@@ -113,6 +116,8 @@ def plot_rssi_stats(df_, ip):
 
 def plot_rssi_decomp(df_, ip, period):
     df = df_[df_['host'] == ip]
+    df = df.loc[~df.index.duplicated(keep='first')]
+
     delta_rssi = (df['max-rssi'] + df['min-rssi']) / 2
     s = seasonal_decompose(delta_rssi, model='additive', period=period)
     x = df.index
@@ -123,7 +128,7 @@ def plot_rssi_decomp(df_, ip, period):
         y=s.observed,
         showlegend=False,
     ), row=1, col=1)
-    fig.update_yaxes(title_text="Observed", row=1, col=1)
+    fig.update_yaxes(title_text="Observed ({})".format(len(df)), row=1, col=1)
 
     fig.append_trace(Scatter(
         x=s.trend.index,

@@ -20,14 +20,14 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 from db_wrapper import *
 from stats_downloader import RF_STATS_TABLE_NAME, ETH_STATS_TABLE_NAME
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def load_data(filename):
     data = pd.read_csv(filename)
     data.index = pd.to_datetime(data['start_ts'])
     return data[data['host'].notna()].sort_index(ascending=True)
 
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def load_data_database(table='rf'):
     db = levitan_db()
     db_engine = db.engine

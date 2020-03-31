@@ -38,15 +38,17 @@ def load_data_database(table='rf'):
         sql_query = r"select * from %s.%s ;" % (db_name, ETH_STATS_TABLE_NAME)
 
     data = pd.read_sql(sql_query, db_engine)
+    data = data[data['host'].notna()]
+    data.drop_duplicates(subset=['start_ts', 'host'], keep='first', inplace=True)
     data.index = pd.to_datetime(data['start_ts'])
-    return data[data['host'].notna()].sort_index(ascending=True)
+
+    return data.sort_index(ascending=True)
 
 
 def plot_rssi(df_, ips):
     fig = Figure()
     for ip in ips:
         df = df_[df_['host'] == ip]
-        df = df.loc[~df.index.duplicated(keep='first')]
         avg_rssi = df['max-rssi'] - (df['max-rssi'] - df['min-rssi']) / 2.0
 
         fig.add_trace(Scatter(
@@ -84,7 +86,6 @@ def plot_rssi_delta(df_, ips, reference = 0, show_plot = False):
         visible = 'legendonly'
     for ip in ips:
         df = df_[df_['host'] == ip]
-        df = df.loc[~df.index.duplicated(keep='first')]
         delta_rssi = df['max-rssi'] - df['min-rssi']
 
         fig.add_trace(Scatter(
@@ -108,7 +109,6 @@ def plot_rssi_delta(df_, ips, reference = 0, show_plot = False):
 
 def plot_rssi_stats(df_, ip):
     df = df_[df_['host'] == ip]
-    df = df.loc[~df.index.duplicated(keep='first')]
     delta_rssi = df['max-rssi'] - df['min-rssi']
     hist_data = [df['max-rssi'], df['min-rssi'], delta_rssi]
     group_labels = ['max-rssi', 'min-rssi', 'delta-rssi']
@@ -116,7 +116,6 @@ def plot_rssi_stats(df_, ip):
 
 def plot_rssi_decomp(df_, ip, period):
     df = df_[df_['host'] == ip]
-    df = df.loc[~df.index.duplicated(keep='first')]
 
     delta_rssi = (df['max-rssi'] + df['min-rssi']) / 2
     s = seasonal_decompose(delta_rssi, model='additive', period=period)
@@ -163,6 +162,8 @@ def main():
 
     ips = df['host'].drop_duplicates().to_list()
     selected_ips = st.sidebar.multiselect('Chose IPs', ips, default=[])
+
+    st.write('Number of IPs: {}, Total records: {}'.format(len(ips), len(df)))
 
     rssi_delta_db_ref = st.sidebar.slider('RSSI delta dB', 2, 20, value=4, step=2)
     period = int(st.sidebar.text_input('Decom period:', 96))

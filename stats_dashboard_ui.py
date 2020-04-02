@@ -168,6 +168,9 @@ def main():
     rssi_delta_db_ref = st.sidebar.slider('RSSI delta dB', 2, 20, value=4, step=2)
     period = int(st.sidebar.text_input('Decom period:', 96))
 
+    if st.sidebar.checkbox('Drop RSSI = -128'):
+        df = df[df['min-rssi'] != -128]
+
     if st.sidebar.button('Run RF analysis'):
         data = df[df['host'].isin(selected_ips)]
         st.write('From: {} to {}'.format(data.index.min(), data.index.max()))
